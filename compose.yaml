@@ -1,0 +1,41 @@
+services:
+  db:
+    image: mariadb:11
+    container_name: osticket-db
+    restart: unless-stopped
+
+    environment:
+      MARIADB_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      MARIADB_DATABASE: ${MYSQL_DATABASE}
+      MARIADB_USER: ${MYSQL_USER}
+      MARIADB_PASSWORD: ${MYSQL_PASSWORD}
+
+    volumes:
+      - osticket-db-data:/var/lib/mysql
+
+    healthcheck:
+      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  osticket:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: osticket-web
+    restart: unless-stopped
+
+    ports:
+      - "8080:80"
+
+    volumes:
+      - ./ost-config.php:/var/www/html/include/ost-config.php:ro
+
+    depends_on:
+      db:
+        condition: service_healthy
+
+volumes:
+  osticket-db-data:
+
